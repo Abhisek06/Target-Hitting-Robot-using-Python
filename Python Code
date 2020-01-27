@@ -1,0 +1,66 @@
+import serial
+import cv2 as cv
+import numpy as np
+
+
+ser = serial.Serial('COM3', 9600,timeout=1)
+
+cap=cv.VideoCapture(0)
+cv.namedWindow("scale")
+i=0
+array=np.empty([10,3])
+
+while i<10:
+    ret,frame=cap.read()
+
+    img=frame.copy()
+
+    img=cv.cvtColor(img,cv.COLOR_BGR2GRAY)
+    img=cv.medianBlur(img,3)
+    circles=cv.HoughCircles(img,cv.HOUGH_GRADIENT,1,500,param1=10,param2=200,minRadius=0,maxRadius=0)
+    if circles is not None:
+        print(circles)
+        array[i]=circles
+        i+=1
+        detected_circles=np.uint32(np.round(circles))
+        for (x,y,r) in detected_circles[0, :]:
+            cv.circle(frame,(x,y), r,(0,255,255), 6)
+            cv.circle(frame, (x, y), 2, 6)
+    k=cv.waitKey(1)
+    if k==27:
+        break
+    cv.imshow("frame",frame)
+    cv.imshow("img",img)
+print(array)        #array formed
+cap.release()
+cv.destroyAllWindows()
+
+x=0
+y=0
+r=0
+
+for i in range (10):
+    x=x+array[i][0]
+    y=y+array[i][1]
+    r=r+array[i][2]
+x=x/10
+y=y/10
+r=r/10
+print(x     ,y      , r     )
+initial_x=0
+initial_y=0
+initial_z=420
+angle_x=int((x-initial_x)/initial_z*57.3)
+angle_y=int(((y-initial_x)/initial_z)*57.3)
+print(angle_x, angle_y)
+angle_x=format(int(angle_x),'03d')
+angle_y=format(int(angle_y),'03d')
+angle= 'f'+str(angle_x)+ str(angle_y)+'t'
+print(angle)
+cv.imshow("frame",frame)
+while True:
+    ser.write(angle.encode())
+    if cv.waitKey()==27:
+        break
+# x=ser.read()
+cv.destroyAllWindows()
